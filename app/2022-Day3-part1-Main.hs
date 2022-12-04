@@ -26,8 +26,7 @@ computeScore cache (pack1, pack2) = foldl (\f x-> if (f>0) then f else score pac
                       False -> 0 
 
 stringToChars :: String -> [Char]
-stringToChars [] = []
-stringToChars (x:xs) = [x] ++ stringToChars xs
+stringToChars s = id s
 
 scoreForChar :: Cache -> Char -> Int
 scoreForChar cache c = case M.lookup c cache of

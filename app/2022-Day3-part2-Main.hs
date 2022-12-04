@@ -32,8 +32,7 @@ findElementInCommon (line1,line2,line3) =
          False -> Nothing
 
 stringToChars :: String -> [Char]
-stringToChars [] = []
-stringToChars (x:xs) = [x] ++ stringToChars xs
+stringToChars s = id s
 
 scoreForChar :: Scores -> Char -> Int
 scoreForChar cache c = case M.lookup c cache of
