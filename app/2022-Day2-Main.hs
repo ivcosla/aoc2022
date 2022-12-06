@@ -1,5 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 import Data.List
+
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 
 main :: IO ()
 main = do
@@ -7,11 +11,6 @@ main = do
   let plays = map lineToMatch contents
   let score = sum $ map computePlayResult plays
   putStrLn ("total score: " ++ show score)
-
-readFileContents' :: String -> IO [String]
-readFileContents' s = do 
-  content <- readFile s 
-  return (lines content)
 
 data Play = Rock | Paper | Scissors deriving (Eq, Show)
 
