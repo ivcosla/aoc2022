@@ -1,11 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main where
-import Data.List
-
-import qualified Data.Text as T
-
-type Stack = [Char]
+import Data.List (nub)
 
 main :: IO ()
 main = do
