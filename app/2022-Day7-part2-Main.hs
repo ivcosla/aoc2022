@@ -73,11 +73,6 @@ applyCd :: Path -> String -> Path
 applyCd path ".." = take ((length path) -1) path
 applyCd path dir = path ++ [dir] 
 
-applyLs :: FileSystem -> Path -> [Metadata] -> FileSystem
-applyLs fs path metas 
-    | pathAlreadyAdded fs path = fs
-    | otherwise = foldl (\acc meta -> addInPath acc path meta ) fs metas
-
 findMoreThan :: Int -> [Metadata] -> Metadata -> [Metadata]
 findMoreThan target acc (File, name, size) = acc
 findMoreThan target acc (Dir, name, size)
