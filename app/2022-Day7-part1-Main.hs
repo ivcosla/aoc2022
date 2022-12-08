@@ -22,8 +22,6 @@ instance Exception TraverseException
 
 data FileDescriptor = File | Dir deriving (Eq, Show)
 
-type Parent = FileDescriptor 
-
 type Metadata =  (FileDescriptor, String, Int)
 
 type FileSystem = T.Tree Metadata
