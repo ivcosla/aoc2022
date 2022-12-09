@@ -96,15 +96,9 @@ dirAlreadyAdded (T.Node (rootFd, rootName, rootSize) nodes) (p:next:path) name
     in dirAlreadyAdded (nodes !! elemIndex) ([next]++path) name
 
 addInPath :: FileSystem -> Path -> Metadata -> FileSystem
--- if we get last element of path we append file to current root in filesystem
--- otherwise we rise exception
 addInPath (T.Node (rootFd, rootName, rootSize) nodes) (p:[]) (metaFd, metaName, metaSize)
     | rootName == p = (T.Node (rootFd, rootName, rootSize + metaSize) $ nodes ++ [T.Node (metaFd, metaName, metaSize) []])
     | otherwise = throw LastOfPathNotFoundInTree 
-
--- in this case we need to find next element in path, recursive call if found
--- until we get to the last elem in path, updating the size of nodes 
--- as we traverse
 addInPath (T.Node (rootFd, rootName, rootSize) nodes) (p:next:path) (metaFd, metaName, metaSize) 
   | rootName == p = 
     let elemIndex = findIndexOfPathInNodes nodes next 
