@@ -2,7 +2,6 @@ module Main where
 
 import Control.Monad.State (State, evalState, get, modify, runState, sequence)
 import qualified Data.Set as S
-import Data.List (intercalate)
 
 data Instruction = Noop | Addx Int deriving (Show)
 
@@ -20,17 +19,14 @@ main = do
   input <- readFile "2022-Day10.txt"
   let g = computeGameState $ lines input
   let registers = registerValue g
-  let compute = computeLine . take 40
-  let rows = take 6 $ iterate (\r -> drop 40 r) registers
-  let screen = intercalate "" $ map compute rows
-  putStr screen
+  print $ computeStrength registers
 
-
-computeLine :: [Int] -> [Char]
-computeLine regs =
-  let enumerate = zip [0..] regs
-      line = map (\(a,b)->if ((a>=(b-1))&&(a<=(b+1))) then '#' else '.') enumerate
-  in line ++ ['\n']
+computeStrength :: [Int] -> Int
+computeStrength a = 
+  let enumerate = zip a [1..]
+      targets = take 6 $ iterate (+40) 20
+      matches = filter (\(e,i)->elem i targets) enumerate
+  in sum $ map (\(i,v)->i*v) matches
 
 computeGameState ::[String] -> GameState
 computeGameState input = do
@@ -85,5 +81,3 @@ testData = do
 test = do
   dat <- testData
   return $ computeGameState dat
-
--- fmap (map (\(a,b)->if ((a>=(b-1))&&(a<=(b+1))) then '#' else '.')) e
