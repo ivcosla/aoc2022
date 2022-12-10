@@ -25,7 +25,6 @@ main = do
   let screen = intercalate "" $ map compute rows
   putStr screen
 
-
 computeLine :: [Int] -> [Char]
 computeLine regs =
   let enumerate = zip [0..] regs
@@ -52,7 +51,6 @@ gameLoop ((1, i):rest) = do
   let registers = (registerValue g) ++ [currentRegister']
   modify (\g -> g {cycleStep=newCycle, registerValue=registers})
   gameLoop rest
-
 gameLoop ((cCount, i):rest) = do
   g <- get
   let newCycle = (cycleStep g) + 1
@@ -77,13 +75,3 @@ parseInstruction s =
       ("noop":_) -> (1, Noop) 
       ("addx":n:_) -> let parsedVal = read n :: Int
                     in (2, Addx parsedVal)
-
-testData = do
-  input <- readFile "2022-Day10-example.input"
-  return $ lines input
-
-test = do
-  dat <- testData
-  return $ computeGameState dat
-
--- fmap (map (\(a,b)->if ((a>=(b-1))&&(a<=(b+1))) then '#' else '.')) e

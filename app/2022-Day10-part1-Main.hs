@@ -48,7 +48,6 @@ gameLoop ((1, i):rest) = do
   let registers = (registerValue g) ++ [currentRegister']
   modify (\g -> g {cycleStep=newCycle, registerValue=registers})
   gameLoop rest
-
 gameLoop ((cCount, i):rest) = do
   g <- get
   let newCycle = (cycleStep g) + 1
@@ -80,4 +79,6 @@ testData = do
 
 test = do
   dat <- testData
-  return $ computeGameState dat
+  let g = computeGameState dat
+  let registers = registerValue g
+  return (computeStrength registers) == 13140
