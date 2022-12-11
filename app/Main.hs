@@ -196,8 +196,8 @@ testState = do
   GameState{roundCount=0, commonDivider=23*19*13*17,monkeys=[m0,m1,m2,m3]}
 
 test1 = do
-  let s = evalState (gameLoop 20) testState 
+  let s = evalState (gameLoop 10000) testState 
   let mons = monkeys s
   let check1 = (inspected (mons !! 0)) == 52166
   let check2 = (inspected (mons !! 3)) == 52013
-  check1 == check2
+  check1 && check2
