@@ -200,4 +200,4 @@ test1 = do
   let mons = monkeys s
   let check1 = (inspected (mons !! 0)) == 52166
   let check2 = (inspected (mons !! 3)) == 52013
-  check1 == check2
+  check1 && check2
