@@ -1,89 +1,203 @@
 module Main where
 
-import Control.Monad.State (State, evalState, get, modify, runState, sequence)
-import qualified Data.Set as S
-import Data.List (intercalate)
+import Control.Monad.State (State, evalState, get, put, modify, runState, sequence)
+import Data.List (intercalate, sortOn)
 
-data Instruction = Noop | Addx Int deriving (Show)
+type Item = Integer
 
-type InstructionWithTime = (Int, Instruction)
+data Monkey = Monkey {
+  index :: Int,
+  items :: [Item],
+  inspected :: Int,
+  test :: (Item->Bool),
+  actionOnTest :: (Bool->Item->State GameState ()),
+  operation :: (Item->Item)
+}
+
+instance Show Monkey where
+  show (Monkey{items=i}) = show i
 
 data GameState = GameState
   { 
-    cycleStep :: Int,
-    registerValue :: [Int]
+    roundCount :: Int,
+    commonDivider :: Integer,
+    monkeys :: [Monkey]
   }
   deriving (Show)
 
 main :: IO ()
 main = do
-  input <- readFile "2022-Day10.txt"
-  let g = computeGameState $ lines input
-  let registers = registerValue g
-  let compute = computeLine . take 40
-  let rows = take 6 $ iterate (\r -> drop 40 r) registers
-  let screen = intercalate "" $ map compute rows
-  putStr screen
+  let res = evalState (gameLoop 10000) initGame
+  let score = monkeyBusiness $ monkeys res
+  print score
 
-
-computeLine :: [Int] -> [Char]
-computeLine regs =
-  let enumerate = zip [0..] regs
-      line = map (\(a,b)->if ((a>=(b-1))&&(a<=(b+1))) then '#' else '.') enumerate
-  in line ++ ['\n']
-
-computeGameState ::[String] -> GameState
-computeGameState input = do
- let init = GameState {cycleStep=0,registerValue=[1]}
- let parsedInput = parseInput input
- let game = gameLoop parsedInput
- let state = flip evalState init game
- state
-
-gameLoop :: [InstructionWithTime] -> State GameState GameState
-gameLoop [] = do
-  g <- get
+gameLoop :: Int -> State GameState GameState
+gameLoop 0 = do 
+  g<-get
   return g
-gameLoop ((1, i):rest) = do
-  g <- get
-  let newCycle = (cycleStep g) + 1
-  let currentRegister = last $ registerValue g
-  let currentRegister' = applyInstruction currentRegister (1,i)
-  let registers = (registerValue g) ++ [currentRegister']
-  modify (\g -> g {cycleStep=newCycle, registerValue=registers})
-  gameLoop rest
+gameLoop rounds = 
+  do
+    g <- get
+    sequence $ map processMonkey $ monkeys g
+    modify (\s -> s{roundCount=succ (roundCount s)})
+    gameLoop $ pred rounds
 
-gameLoop ((cCount, i):rest) = do
-  g <- get
-  let newCycle = (cycleStep g) + 1
-  let currentRegister = last $ registerValue g
-  let register' = (registerValue g) ++ [currentRegister]
-  modify (\g' -> g'{cycleStep=newCycle, registerValue=register'})
-  gameLoop ([(cCount-1, i)] ++ rest)
+initGame :: GameState
+initGame = do
+  let m0 = Monkey {
+    index= 0,
+    inspected= 0,
+    items=[72, 64, 51, 57, 93, 97, 68],
+    operation = (*19),
+    test = divisibleBy 17,
+    actionOnTest = monkeyAction (4,7) 
+  }
+  let m1 = Monkey {
+    index= 1,
+    inspected= 0,
+    items=[62],
+    operation = (*11),
+    test = divisibleBy 3,
+    actionOnTest = monkeyAction (3,2)
+  }
+  let m2 = Monkey {
+    index= 2,
+    inspected= 0,
+    items=[57, 94, 69, 79, 72],
+    operation = (+6),
+    test = divisibleBy 19,
+    actionOnTest = monkeyAction (0,4)
+  }
+  let m3 = Monkey {
+    index= 3,
+    inspected= 0,
+    items=[80, 64, 92, 93, 64, 56],
+    operation = (+5),
+    test = divisibleBy 7,
+    actionOnTest = monkeyAction (2,0)
+  }
+  let m4 = Monkey {
+    index= 4,
+    inspected= 0,
+    items=[70, 88, 95, 99, 78, 72, 65, 94],
+    operation = (+7),
+    test = divisibleBy 2,
+    actionOnTest = monkeyAction (7,5)
+  }
+  let m5 = Monkey {
+    index= 5,
+    inspected= 0,
+    items=[57, 95, 81, 61],
+    operation = (^2),
+    test = divisibleBy 5,
+    actionOnTest = monkeyAction (1,6)
+  }
+  let m6 = Monkey {
+    index= 6,
+    inspected= 0,
+    items=[79,99],
+    operation = (+2),
+    test = divisibleBy 11,
+    actionOnTest = monkeyAction (3,1)
+  }
+  let m7 = Monkey {
+    index= 7,
+    inspected= 0,
+    items=[68, 98, 62],
+    operation = (+3),
+    test = divisibleBy 13,
+    actionOnTest = monkeyAction (5,6)
+  }
+  let monkeys' = [m0,m1,m2,m3,m4,m5,m6,m7]
+  GameState{roundCount=0, monkeys=monkeys', commonDivider=17*3*19*7*2*5*11*13}
 
+divisibleBy n = (\i -> (mod i n) == 0)
 
-applyInstruction :: Int->InstructionWithTime -> Int
-applyInstruction reg (1, Noop) = reg 
-applyInstruction reg (1, Addx n) = reg + n 
-
-parseInput :: [String] -> [InstructionWithTime]
-parseInput s = map parseInstruction s
-
-parseInstruction :: String -> InstructionWithTime
-parseInstruction s = 
-  let parts = words s
+monkeyBusiness :: [Monkey] -> Int
+monkeyBusiness mons =
+  let sorted = reverse $ sortOn (\Monkey{inspected=ins} -> ins) mons
+      twoBigger = take 2 sorted
+      twoInspected = map (\Monkey{inspected=ins}->ins) twoBigger
   in
-    case (parts) of
-      ("noop":_) -> (1, Noop) 
-      ("addx":n:_) -> let parsedVal = read n :: Int
-                    in (2, Addx parsedVal)
+    product twoInspected
 
-testData = do
-  input <- readFile "2022-Day10-example.input"
-  return $ lines input
+processMonkey :: Monkey -> State GameState () 
+processMonkey Monkey{index=n} = 
+  do
+    g <- get
+    let monkey = (monkeys g) !! n
+    processMonkey' monkey
 
-test = do
-  dat <- testData
-  return $ computeGameState dat
+processMonkey' :: Monkey -> State GameState () 
+processMonkey' Monkey{index=n, items=[], operation=op, test=t, actionOnTest=action, inspected=ins} = 
+  do
+    g <- get
+    let prevMonkeys = monkeys g
+    let monkeys' = replace n Monkey{index=n,items=[], operation=op, test=t, actionOnTest = action, inspected=ins} prevMonkeys
+    modify (\s -> s{monkeys=monkeys'})
+    return ()
+processMonkey' Monkey{index=n, items=(i:rest), operation=op, test=t, actionOnTest=action, inspected=ins} =
+  do
+    g <- get
+    let worryAfterInspect = op i
+    let worry = mod worryAfterInspect $ commonDivider g
+    let testResult = t worry
+    action testResult worry
+    processMonkey' Monkey {index=n, items=rest, operation=op, test=t, actionOnTest = action, inspected=(ins+1)}
 
--- fmap (map (\(a,b)->if ((a>=(b-1))&&(a<=(b+1))) then '#' else '.')) e
+monkeyAction :: (Int, Int) -> Bool -> Item -> State GameState ()
+monkeyAction (_, monkeyIfFalse) False item =
+  modify (\g -> g{monkeys=(addItemToMonkey monkeyIfFalse item (monkeys g))})
+monkeyAction (monkeyIfTrue,_) True item =
+  modify (\g -> g{monkeys=(addItemToMonkey monkeyIfTrue item (monkeys g))})
+
+addItemToMonkey :: Int -> Item -> [Monkey] -> [Monkey]
+addItemToMonkey to item monkeys =
+  let target = monkeys !! to 
+      targetWithItem = (items target) ++ [item] 
+  in replace to target{items=targetWithItem} monkeys
+
+replace index elem = map (\(index', elem') -> if index' == index then elem else elem') . zip [0..]
+
+testState :: GameState
+testState = do
+  let m0 = Monkey {
+    index= 0,
+    inspected= 0,
+    items=[79,98],
+    operation = (*19),
+    test = divisibleBy 23,
+    actionOnTest = monkeyAction (2,3) 
+  }
+  let m1 = Monkey {
+    index= 1,
+    inspected= 0,
+    items=[54,65,75,74],
+    operation = (+6),
+    test = divisibleBy 19,
+    actionOnTest = monkeyAction (2,0)
+  }
+  let m2 = Monkey {
+    index= 2,
+    inspected= 0,
+    items=[79,60,97],
+    operation = (^2),
+    test = divisibleBy 13,
+    actionOnTest = monkeyAction (1,3)
+  }
+  let m3 = Monkey {
+    index= 3,
+    inspected= 0,
+    items=[74],
+    operation = (+3),
+    test = divisibleBy 17,
+    actionOnTest = monkeyAction (0,1)
+  }
+  GameState{roundCount=0, commonDivider=23*19*13*17,monkeys=[m0,m1,m2,m3]}
+
+test1 = do
+  let s = evalState (gameLoop 20) testState 
+  let mons = monkeys s
+  let check1 = (inspected (mons !! 0)) == 52166
+  let check2 = (inspected (mons !! 3)) == 52013
+  check1 == check2
